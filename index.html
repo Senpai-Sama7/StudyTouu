@@ -4,333 +4,399 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synapse | Your Personal AI Study Partner</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-
-    <!-- Custom Styles -->
     <style>
+        :root {
+            --glow-color-1: #38bdf8;
+            --glow-color-2: #a78bfa;
+            --glow-color-3: #f472b6;
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
+            background-color: #05050a;
             color: #e2e8f0;
-            overflow: hidden; /* Hide scrollbars from canvas */
-        }
-
-        /* Custom glowing effect for the upload box */
-        .glow-border {
-            position: relative;
-            border-radius: 0.75rem; /* rounded-xl */
             overflow: hidden;
-            z-index: 1;
         }
-
-        .glow-border::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 0.75rem;
-            padding: 2px;
-            background: linear-gradient(120deg, #38bdf8, #a78bfa, #f472b6);
-            -webkit-mask: 
-                linear-gradient(#fff 0 0) content-box, 
-                linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            z-index: -1;
-            opacity: 0.5;
-            transition: opacity 0.3s ease-in-out;
-        }
-        
-        .glow-border:hover::before, .drag-over::before {
-            opacity: 1;
-        }
-
-        /* Custom button style */
-        .btn-primary {
-            background: linear-gradient(90deg, #38bdf8, #818cf8);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
-        }
-        .btn-primary:disabled {
-            background: #4b5563;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        /* File list styling */
-        .file-item {
-            background-color: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
-        }
-
-        /* Canvas for background animation */
-        #particle-canvas {
-            position: absolute;
+        #aurora-canvas {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
+            opacity: 0.6;
+        }
+        /* --- Enhanced Glow Border --- */
+        .glow-border {
+            position: relative;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .glow-border::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(120deg, var(--glow-color-1), var(--glow-color-2), var(--glow-color-3));
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: -1;
+            opacity: 0.4;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            animation: gradient-breathe 8s ease infinite;
+        }
+        @keyframes gradient-breathe {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .glow-border:hover::before, .drag-over::before {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        /* --- Button Styles --- */
+        .btn-primary {
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.1);
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.3);
+        }
+        .btn-primary:active:not(:disabled) {
+             transform: translateY(-1px) scale(0.98);
+             box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+        }
+        .btn-primary:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* --- File List & Animations --- */
+        .file-item {
+            background-color: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(5px);
+            animation: fade-in-up 0.5s ease forwards;
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* --- Loader Animation --- */
+        #loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            inset: 0;
+            background-color: #05050a;
+            z-index: 100;
+            transition: opacity 0.7s ease-out;
+        }
+        .loader-logo {
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            letter-spacing: -2px;
+        }
+        .loader-logo span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            animation: letter-appear 1s forwards;
+            background: linear-gradient(90deg, var(--glow-color-1), var(--glow-color-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        @keyframes letter-appear {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
     </style>
 </head>
 <body class="antialiased">
 
+    <!-- Loader Screen -->
+    <div id="loader">
+        <div class="loader-logo">
+            <span style="animation-delay: 0.1s;">S</span>
+            <span style="animation-delay: 0.2s;">y</span>
+            <span style="animation-delay: 0.3s;">n</span>
+            <span style="animation-delay: 0.4s;">a</span>
+            <span style="animation-delay: 0.5s;">p</span>
+            <span style="animation-delay: 0.6s;">s</span>
+            <span style="animation-delay: 0.7s;">e</span>
+        </div>
+    </div>
+
     <!-- Background Animation Canvas -->
-    <canvas id="particle-canvas"></canvas>
+    <canvas id="aurora-canvas"></canvas>
 
     <div class="relative min-h-screen flex flex-col items-center justify-center p-4 z-10">
-        
         <!-- Main Content Container -->
-        <div class="w-full max-w-2xl mx-auto text-center">
+        <div id="main-content" class="w-full max-w-2xl mx-auto text-center opacity-0 transition-opacity duration-1000">
 
-            <!-- Header -->
             <header class="mb-8">
-                <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-2">
+                <h1 class="text-5xl md:text-6xl font-black text-white tracking-tight mb-2">
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-400">Synapse</span>
                 </h1>
                 <p class="text-lg md:text-xl text-slate-400">Your personal AI study partner.</p>
             </header>
 
-            <!-- Form -->
+            <!-- IMPORTANT: Replace YOUR_UNIQUE_FORM_ID with your own from formspree.io -->
             <form id="uploadForm" action="https://formspree.io/f/YOUR_UNIQUE_FORM_ID" method="POST" enctype="multipart/form-data">
-                
-                <!-- File Upload Box -->
                 <div id="drop-zone" class="glow-border mb-6">
                     <div class="relative bg-slate-900/70 backdrop-blur-sm rounded-xl p-8 md:p-12 text-center cursor-pointer transition-all duration-300">
-                        <input type="file" id="file-input" name="upload" multiple class="hidden">
-                        
-                        <!-- Icon -->
-                        <svg class="mx-auto h-12 w-12 text-slate-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 17.25z" />
-                        </svg>
-
-                        <!-- Text -->
-                        <p class="font-semibold text-white">
-                            <span class="text-sky-400">Click to upload</span> or drag and drop
-                        </p>
-                        <p class="text-xs text-slate-500 mt-1">PDF, DOCX, TXT, or images (up to 25MB)</p>
+                        <input type="file" id="file-input" name="upload" multiple class="hidden" aria-label="File Upload">
+                        <svg class="mx-auto h-12 w-12 text-slate-500 mb-4 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 17.25z" /></svg>
+                        <p class="font-semibold text-white"><span class="text-sky-400">Click to upload</span> or drag and drop</p>
+                        <p class="text-xs text-slate-500 mt-1">PDF, DOCX, TXT, images (Max 25MB total)</p>
                     </div>
                 </div>
 
-                <!-- Topic Input -->
                 <div class="mb-6">
-                     <label for="topic" class="sr-only">Topic</label>
-                     <input type="text" name="topic" id="topic" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition" placeholder="What's the topic? (e.g., Biology Chapter 5)" required>
+                    <label for="topic" class="sr-only">Topic</label>
+                    <input type="text" name="topic" id="topic" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition duration-300" placeholder="What's the topic? (e.g., Biology Chapter 5)">
                 </div>
+                 <input type="text" name="_gotcha" style="display:none" /> <!-- Honeypot for spam -->
 
-                <!-- File List -->
                 <div id="file-list" class="space-y-2 mb-6 text-left"></div>
 
-                <!-- Submit Button -->
-                <button id="submit-btn" type="submit" class="w-full btn-primary font-bold text-white py-3 rounded-lg text-lg" disabled>
-                    Send to AI Agent
+                <button id="submit-btn" type="submit" class="w-full btn-primary font-bold text-white py-3 rounded-lg text-lg flex items-center justify-center" disabled>
+                    <span id="btn-text">Send to Study Agent</span>
+                    <svg id="btn-spinner" class="animate-spin ml-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                 </button>
-
             </form>
-            
-            <!-- Success/Error Message Box -->
-            <div id="message-box" class="hidden mt-6 p-4 rounded-lg text-center font-semibold"></div>
 
+            <div id="message-box" class="hidden mt-6 p-4 rounded-lg text-center font-semibold transition-all duration-300 ease-out opacity-0 translate-y-4"></div>
         </div>
     </div>
 
-    <!-- JavaScript Logic -->
     <script>
-        // --- Formspree Setup ---
-        // 1. Go to https://formspree.io/ and create a new form.
-        // 2. Replace 'YOUR_UNIQUE_FORM_ID' in the form's 'action' attribute above with your actual form ID.
-
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const fileList = document.getElementById('file-list');
-        const uploadForm = document.getElementById('uploadForm');
-        const submitBtn = document.getElementById('submit-btn');
-        const messageBox = document.getElementById('message-box');
-        const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
-
-        // --- Drag and Drop Logic ---
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over', 'border-sky-400');
-            dropZone.querySelector('.glow-border').classList.add('drag-over');
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over', 'border-sky-400');
-            dropZone.querySelector('.glow-border').classList.remove('drag-over');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over', 'border-sky-400');
-            dropZone.querySelector('.glow-border').classList.remove('drag-over');
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('loader');
+            const mainContent = document.getElementById('main-content');
             
-            const files = e.dataTransfer.files;
-            if (files.length) {
-                fileInput.files = files;
-                updateFileList();
-            }
-        });
+            // --- Loading Screen Logic ---
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    loader.classList.add('opacity-0');
+                    loader.addEventListener('transitionend', () => loader.style.display = 'none', { once: true });
+                    mainContent.classList.remove('opacity-0');
+                    mainContent.style.transitionDelay = '200ms';
+                }, 1500); // Wait for logo animation
+            });
 
-        fileInput.addEventListener('change', updateFileList);
-        
-        // --- File List and Validation ---
-        function updateFileList() {
-            fileList.innerHTML = ''; // Clear existing list
-            const files = fileInput.files;
-            let totalSize = 0;
-            let hasFiles = files.length > 0;
+            // --- Form & File Upload Logic ---
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const fileList = document.getElementById('file-list');
+            const uploadForm = document.getElementById('uploadForm');
+            const topicInput = document.getElementById('topic');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const messageBox = document.getElementById('message-box');
+            const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
-            for (const file of files) {
-                totalSize += file.size;
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item flex justify-between items-center p-3 rounded-lg';
-                fileItem.innerHTML = `
-                    <span class="text-sm text-slate-300 truncate">${file.name}</span>
-                    <span class="text-xs text-slate-500 ml-4">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                `;
-                fileList.appendChild(fileItem);
-            }
+            const checkFormValidity = () => {
+                const files = Array.from(fileInput.files);
+                let totalSize = files.reduce((acc, file) => acc + file.size, 0);
+                const hasTopic = topicInput.value.trim() !== '';
+                const filesOk = files.length > 0 && totalSize <= MAX_FILE_SIZE;
 
-            if (totalSize > MAX_FILE_SIZE) {
-                showMessage('Total file size exceeds 25MB limit.', 'error');
-                submitBtn.disabled = true;
-            } else {
-                submitBtn.disabled = !hasFiles;
-                if (messageBox.dataset.type === 'error') {
+                submitBtn.disabled = !(hasTopic && filesOk);
+                 
+                if (files.length > 0 && totalSize > MAX_FILE_SIZE) {
+                    showMessage('Total file size exceeds 25MB limit.', 'error');
+                } else if (messageBox.dataset.type === 'error' && messageBox.textContent.includes('exceeds 25MB')) {
                     hideMessage();
                 }
-            }
-        }
-        
-        // --- Form Submission Logic ---
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
-            
-            const formData = new FormData(uploadForm);
-            const response = await fetch(uploadForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
+            };
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+            dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileList();
                 }
             });
 
-            if (response.ok) {
-                showMessage('Success! Your files have been sent.', 'success');
-                uploadForm.reset();
+            fileInput.addEventListener('change', updateFileList);
+            topicInput.addEventListener('input', checkFormValidity);
+            
+            function updateFileList() {
                 fileList.innerHTML = '';
-                submitBtn.textContent = 'Send to AI Agent';
-            } else {
-                const data = await response.json();
-                const errorMessage = data.errors ? data.errors.map(error => error.message).join(', ') : 'An unknown error occurred.';
-                showMessage(`Oops! ${errorMessage}`, 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Try Again';
+                const files = fileInput.files;
+                for (const file of files) {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item flex justify-between items-center p-3 rounded-lg';
+                    fileItem.innerHTML = `
+                        <span class="text-sm text-slate-300 truncate pr-4">${file.name}</span>
+                        <span class="text-xs text-slate-500 ml-4 flex-shrink-0">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                checkFormValidity();
             }
-        });
 
-        // --- Message Display ---
-        function showMessage(message, type) {
-            messageBox.textContent = message;
-            messageBox.dataset.type = type;
-            if (type === 'success') {
-                messageBox.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-green-500/20 text-green-300';
-            } else {
-                messageBox.className = 'mt-6 p-4 rounded-lg text-center font-semibold bg-red-500/20 text-red-300';
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                btnText.textContent = 'Processing...';
+                btnSpinner.classList.remove('hidden');
+                hideMessage();
+
+                const formData = new FormData(uploadForm);
+                try {
+                    const response = await fetch(uploadForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    if (response.ok) {
+                        showMessage('Success! Your files have been sent.', 'success');
+                        uploadForm.reset();
+                        fileList.innerHTML = '';
+                        checkFormValidity();
+                    } else {
+                        const data = await response.json();
+                        const errorMessage = data.errors ? data.errors.map(error => error.message).join(', ') : 'Form submission failed.';
+                        throw new Error(errorMessage);
+                    }
+                } catch (error) {
+                    showMessage(`Oops! ${error.message}`, 'error');
+                } finally {
+                    btnText.textContent = 'Send to Study Agent';
+                    btnSpinner.classList.add('hidden');
+                    // Keep button disabled after successful submission until new data is entered
+                    if (messageBox.dataset.type === 'success') {
+                        submitBtn.disabled = true;
+                    } else {
+                         checkFormValidity(); // Re-enable if there was an error and form is valid
+                    }
+                }
+            });
+
+            function showMessage(message, type) {
+                messageBox.textContent = message;
+                messageBox.dataset.type = type;
+                messageBox.className = `mt-6 p-4 rounded-lg text-center font-semibold transition-all duration-300 ease-out ${
+                    type === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                } opacity-100 translate-y-0`;
+                messageBox.classList.remove('hidden');
             }
-            messageBox.classList.remove('hidden');
-        }
-
-        function hideMessage() {
-            messageBox.classList.add('hidden');
-        }
-
-        // --- Background Particle Animation ---
-        const canvas = document.getElementById('particle-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 1.5 + 0.5;
-                this.speedX = Math.random() * 1 - 0.5;
-                this.speedY = Math.random() * 1 - 0.5;
-                this.color = `rgba(167, 139, 250, ${Math.random() * 0.5 + 0.2})`;
+             function hideMessage() {
+                messageBox.classList.add('opacity-0', 'translate-y-4');
+                messageBox.addEventListener('transitionend', () => messageBox.classList.add('hidden'), { once: true });
             }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
 
-                if (this.size > 0.1) this.size -= 0.01;
-                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+            // --- Interactive Aurora Background ---
+            const canvas = document.getElementById('aurora-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, particles;
+            const mouse = { x: undefined, y: undefined };
+            const particleSettings = {
+                count: window.innerWidth < 768 ? 20 : 40,
+                maxSpeed: 0.1,
+                minRadius: 200,
+                maxRadius: 400,
+            };
 
-        function initParticles() {
-            for (let i = 0; i < 100; i++) {
-                particles.push(new Particle());
-            }
-        }
-
-        function handleParticles() {
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                if (particles[i].size <= 0.1) {
-                    particles.splice(i, 1);
-                    i--;
+            function init() {
+                resize();
+                particles = [];
+                for (let i = 0; i < particleSettings.count; i++) {
                     particles.push(new Particle());
                 }
+                requestAnimationFrame(animate);
             }
-        }
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            handleParticles();
-            requestAnimationFrame(animate);
-        }
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
 
-        initParticles();
-        animate();
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * w;
+                    this.y = Math.random() * h;
+                    this.vx = (Math.random() - 0.5) * particleSettings.maxSpeed;
+                    this.vy = (Math.random() - 0.5) * particleSettings.maxSpeed;
+                    this.radius = particleSettings.minRadius + Math.random() * (particleSettings.maxRadius - particleSettings.minRadius);
+                    const colors = ['#38bdf8', '#818cf8', '#a78bfa', '#f472b6'];
+                    this.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x - this.radius > w) this.x = -this.radius;
+                    if (this.x + this.radius < 0) this.x = w + this.radius;
+                    if (this.y - this.radius > h) this.y = -this.radius;
+                    if (this.y + this.radius < 0) this.y = h + this.radius;
+
+                    if (mouse.x !== undefined) {
+                        const dx = mouse.x - this.x;
+                        const dy = mouse.y - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < this.radius * 1.5) {
+                            this.x += dx / dist * 0.5;
+                            this.y += dy / dist * 0.5;
+                        }
+                    }
+                }
+                draw() {
+                    ctx.beginPath();
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                    gradient.addColorStop(0, `${this.color}33`); // Inner color (more opaque)
+                    gradient.addColorStop(1, `${this.color}00`); // Outer color (transparent)
+                    ctx.fillStyle = gradient;
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, w, h);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            window.addEventListener('mousemove', e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('mouseout', () => {
+                mouse.x = undefined;
+                mouse.y = undefined;
+            });
+
+            init();
+        });
     </script>
-
 </body>
 </html>
